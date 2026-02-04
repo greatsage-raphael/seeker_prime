@@ -245,7 +245,7 @@ const NotesPage: React.FC = () => {
   const isOwner = user?.id === lesson?.student_id;
 
   return (
-    <div className="flex flex-col lg:flex-row w-full min-h-screen bg-[#e5e7eb] font-sans text-gray-900 lg:overflow-hidden">
+    <div className="flex flex-col lg:flex-row w-full min-h-screen h-auto overflow-auto bg-[#e5e7eb] font-sans text-gray-900 overscroll-contain">
       
       {/* LEFT SIDEBAR: LESSON IMAGES */}
       <aside className="w-full lg:w-72 bg-[#d1d5db] p-6 shrink-0 lg:h-full lg:overflow-y-auto lg:border-r border-gray-300 shadow-inner">
