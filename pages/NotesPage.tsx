@@ -119,7 +119,7 @@ const NotesPage: React.FC = () => {
       }
       if (data.video_status === 'idle' && !cinemaTriggered.current) {
         cinemaTriggered.current = true;
-        fetch('http://localhost:3001/slides/generate', {
+        fetch('https://seeker-server-tn3b.onrender.com/slides/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ lessonId, summary: data.lesson_summary, thoughts: data.thoughts, title: data.title })
@@ -127,7 +127,7 @@ const NotesPage: React.FC = () => {
       }
       if ((!data.podcast_status || data.podcast_status === 'idle') && !data.podcast_url && !podcastTriggered.current) {
         podcastTriggered.current = true;
-        fetch('http://localhost:3001/slides/generate-podcast', {
+        fetch('https://seeker-server-tn3b.onrender.com/slides/generate-podcast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ lessonId, summary: data.lesson_summary, title: data.title })
@@ -135,7 +135,7 @@ const NotesPage: React.FC = () => {
       }
       if ((!data.animated_video_status || data.animated_video_status === 'idle') && !data.animated_video_url && !animatedTriggered.current) {
         animatedTriggered.current = true;
-        fetch('http://localhost:3001/video/generate-cinematic', {
+        fetch('https://seeker-server-tn3b.onrender.com/video/generate-cinematic', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ lessonId, summary: data.lesson_summary, title: data.title, studentId: data.student_id })
@@ -171,7 +171,7 @@ const NotesPage: React.FC = () => {
   const handleComicToggle = () => {
     if (!showComic && (!lesson.comic_pages || lesson.comic_pages.length === 0) && !comicTriggered.current) {
       comicTriggered.current = true;
-      fetch('http://localhost:3001/slides/generate-comic', {
+      fetch('https://seeker-server-tn3b.onrender.com/slides/generate-comic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lessonId, ai_notes: lesson.ai_notes, title: lesson.title })
