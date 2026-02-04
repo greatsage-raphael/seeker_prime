@@ -27,7 +27,7 @@ const Blackboard: React.FC<BlackboardProps> = ({
   const thoughtRef = useRef<HTMLDivElement>(null);
   const lessonLogRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null); // New ref for auto-scrolling
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   // Auto-scroll thoughts and lesson log
   useEffect(() => { if (thoughtRef.current) thoughtRef.current.scrollTop = thoughtRef.current.scrollHeight; }, [thoughts]);
