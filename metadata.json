@@ -1,0 +1,8 @@
+{
+  "name": "Seeker",
+  "description": "An interactive educational app where an AI teacher explains topics on a virtual blackboard using Gemini's Live API for real-time voice, vision, and visual animation.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}
