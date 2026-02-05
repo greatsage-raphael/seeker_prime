@@ -8,7 +8,7 @@
 - [Technical Architecture](#technical-architecture)
     - [The Live Multimodal Loop](#the-live-multimodal-loop)
     - [Curriculum Architect Flow](#curriculum-architect-flow)
-    - [Agentic Media Pipeline](#agentic-media-pipeline)
+    - [Media Pipeline](#media-pipeline)
 - [Gemini 3 Implementation](#gemini-3-implementation)
 - [Directory Structure](#directory-structure)
   - [/src/components](#srccomponents)
@@ -49,6 +49,9 @@ The core of Seeker is the `LessonPage`. Unlike traditional chatbots, this establ
 ### Curriculum Architect Flow
 Users upload raw PDF documents (textbooks, papers) via the `CoursesPage`. The frontend converts these files to Base64 and sends them to **Gemini 3 Pro**. Using its high-reasoning capabilities, the model acts as an "Architect," restructuring the raw data into a gamified dependency tree (Courses → Modules → Lesson Plans).
 
+![The Live Multimodal Loop](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/diagram-export-2-5-2026-9_09_59-PM.png)
+
+
 ### Media Pipeline
 After a lesson concludes, the frontend triggers asynchronous generation requests. While the user reviews their notes, the system generates high-fidelity media:
 
@@ -64,7 +67,7 @@ After a lesson concludes, the frontend triggers asynchronous generation requests
 
 [![Watch the demo](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-53-36.png)](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/33d3435d-fe5e-450c-b71b-a3797944f5b8/cinematic_1769537211186.mp4)
 
-*   **slides:** Gemini 3 is used to generate slides on the lesson materials using gemini 3 then stitches the images + audio with ffmpeg to create a 1 minute explainer slides video. 
+*   **slides:** Gemini 3 generate slides using yhe lesson materials then stitches the images + audio generated with ffmpeg to create a 1 minute explainer slides video. 
 
 [![Watch the demo](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-58-24.png)](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/33d3435d-fe5e-450c-b71b-a3797944f5b8/slides_1769537093740.mp4)
 
