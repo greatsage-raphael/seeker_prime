@@ -49,11 +49,24 @@ The core of Seeker is the `LessonPage`. Unlike traditional chatbots, this establ
 ### Curriculum Architect Flow
 Users upload raw PDF documents (textbooks, papers) via the `CoursesPage`. The frontend converts these files to Base64 and sends them to **Gemini 3 Pro**. Using its high-reasoning capabilities, the model acts as an "Architect," restructuring the raw data into a gamified dependency tree (Courses → Modules → Lesson Plans).
 
-### Agentic Media Pipeline
+### Media Pipeline
 After a lesson concludes, the frontend triggers asynchronous generation requests. While the user reviews their notes, the system generates high-fidelity media:
+
 *   **Comics:** Gemini 3 generates visual descriptions which are rendered into comic panels.
+
+![Comics 2](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-42-34.png)
+
 *   **Podcasts:** Two distinct AI personalities ("Alex" and "Sam") discuss the lesson topic.
-*   **Cinematics:** Google Veo generates 8-second video loops stitched into an explainer video.
+
+![Podcast](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-47-44.png)
+
+*   **Cinematics:** Google Veo generates 8-second video loops stitched into a 30-second explainer video.
+
+[![Watch the demo](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-53-36.png)](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/33d3435d-fe5e-450c-b71b-a3797944f5b8/cinematic_1769537211186.mp4)
+
+*   **slides:** Gemini 3 is used to generate slides on the lesson materials using gemini 3 then stitches the images + audio with ffmpeg to create a 1 minute explainer slides video. 
+
+[![Watch the demo](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-58-24.png)](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/33d3435d-fe5e-450c-b71b-a3797944f5b8/slides_1769537093740.mp4)
 
 ## Gemini 3 Implementation
 
