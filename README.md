@@ -41,6 +41,8 @@ The core of Seeker is the `LessonPage`. Unlike traditional chatbots, this establ
 2.  **VAD (Voice Activity Detection):** The model listens for user interruptions. If detected, the frontend immediately halts audio playback and clears the buffer (interruptibility).
 3.  **Multimodal Output:** The model responds with Audio (played via the browser) and Text/JSON commands (rendered dynamically on the `<Blackboard />` component).
 
+![The Live Multimodal Loop](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Untitled%20diagram-2026-02-05-162810.png)
+
 ### Curriculum Architect Flow
 Users upload raw PDF documents (textbooks, papers) via the `CoursesPage`. The frontend converts these files to Base64 and sends them to **Gemini 3 Pro**. Using its high-reasoning capabilities, the model acts as an "Architect," restructuring the raw data into a gamified dependency tree (Courses → Modules → Lesson Plans).
 
