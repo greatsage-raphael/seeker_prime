@@ -49,7 +49,7 @@ The core of Seeker is the `LessonPage`. Unlike traditional chatbots, this establ
 ### Curriculum Architect Flow
 Users upload raw PDF documents (textbooks, papers) via the `CoursesPage`. The frontend converts these files to Base64 and sends them to **Gemini 3 Pro**. Using its high-reasoning capabilities, the model acts as an "Architect," restructuring the raw data into a gamified dependency tree (Courses → Modules → Lesson Plans).
 
-![The Live Multimodal Loop](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/diagram-export-2-5-2026-9_09_59-PM.png)
+![Curriculum Architect Flow](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/diagram-export-2-5-2026-9_14_08-PM.png)
 
 
 ### Media Pipeline
