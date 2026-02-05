@@ -1,12 +1,6 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
-# Seeker | The AI-tutor
-
 ![Seeker Banner](https://raw.githubusercontent.com/user-attachments/assets/placeholder-banner.png)
 
-# Seeker | The Cognitive Academy
+# Seeker | The Personal AI-Tutor
 
 ## Table of Contents
 
@@ -31,7 +25,18 @@ The application moves beyond simple text chat, offering a multimodal experience 
 
 ## Technical Architecture
 
-The frontend is built with **React (Vite)** and **TypeScript**, leveraging **WebSockets** for low-latency AI communication and **Supabase** for state persistence.
+## Technical Architecture
+
+Seeker operates as a distributed system across two repositories to handle the intense computational requirements of generative media.
+
+*   **Frontend (This Repo):** Handles the real-time "Live Classroom," audio streaming, and direct user interaction.
+*   **Backend ([Seeker Server](https://github.com/greatsage-raphael/seeker_server)):** Handles long-running agentic workflows (Video Rendering, FFmpeg processing, Comic generation) that cannot run in a browser environment.
+
+### Client-Server Interaction Flow
+
+The Frontend manages the immediate learning experience. When a lesson concludes, it dispatches asynchronous triggers to the Backend. The Backend generates high-fidelity assets (using Veo and Gemini) and uploads them to Supabase. The Frontend listens for database changes via WebSockets to update the UI in real-time when the media is ready.
+
+![Client-Server Interaction Flow](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/diagram-export-2-5-2026-8_25_01-PM.png)
 
 ### The Live Multimodal Loop
 
@@ -41,7 +46,7 @@ The core of Seeker is the `LessonPage`. Unlike traditional chatbots, this establ
 2.  **VAD (Voice Activity Detection):** The model listens for user interruptions. If detected, the frontend immediately halts audio playback and clears the buffer (interruptibility).
 3.  **Multimodal Output:** The model responds with Audio (played via the browser) and Text/JSON commands (rendered dynamically on the `<Blackboard />` component).
 
-![The Live Multimodal Loop](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Untitled%20diagram-2026-02-05-162810.png)
+![The Live Multimodal Loop](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/image%20(3).png)
 
 ### Curriculum Architect Flow
 Users upload raw PDF documents (textbooks, papers) via the `CoursesPage`. The frontend converts these files to Base64 and sends them to **Gemini 3 Pro**. Using its high-reasoning capabilities, the model acts as an "Architect," restructuring the raw data into a gamified dependency tree (Courses → Modules → Lesson Plans).
@@ -109,5 +114,4 @@ VITE_GEMINI_API_KEY=AIza...
 
 ```bash
 npm run dev
-Open http://localhost:5173 (or the port specified in your terminal) to view the application.
 ```
