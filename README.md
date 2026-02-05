@@ -1,4 +1,4 @@
-![Seeker Banner](https://raw.githubusercontent.com/user-attachments/assets/placeholder-banner.png)
+![Seeker Banner](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2022-29-23.png)
 
 # Seeker | The Personal AI-Tutor
 
@@ -67,7 +67,7 @@ After a lesson concludes, the frontend triggers asynchronous generation requests
 
 [![Watch the demo](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-53-36.png)](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/33d3435d-fe5e-450c-b71b-a3797944f5b8/cinematic_1769537211186.mp4)
 
-*   **slides:** Gemini 3 generate slides using yhe lesson materials then stitches the images + audio generated with ffmpeg to create a 1 minute explainer slides video. 
+*   **slides:** Gemini 3 generate slides using yhe lesson materials then stitches the images + audio generated with ffmpeg to create slides for the user. 
 
 [![Watch the demo](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-58-24.png)](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/33d3435d-fe5e-450c-b71b-a3797944f5b8/slides_1769537093740.mp4)
 
