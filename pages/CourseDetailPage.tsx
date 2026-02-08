@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../src/lib/supabase';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import CertificateView from '@/components/CertificateView';
+import { useUser } from '@clerk/clerk-react';
 
 const TEXT_MODEL = "gemini-3-pro-preview"; // Latest Gemini 3 Pro
 const IMAGE_MODEL = "gemini-3-pro-image-preview"; // Nano Banana Pro
@@ -9,10 +11,12 @@ const IMAGE_MODEL = "gemini-3-pro-image-preview"; // Nano Banana Pro
 const CourseDetailPage: React.FC = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
+    const { user } = useUser();
 
     const [course, setCourse] = useState<any>(null);
     const [modules, setModules] = useState<any[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
+    
 
     useEffect(() => {
         fetchCourseAndModules();
@@ -106,6 +110,7 @@ const CourseDetailPage: React.FC = () => {
 
     const allLessons = modules.flatMap(m => m.lesson_plans || []);
     const completedLessons = allLessons.filter(l => l.status === 'completed').length;
+    const isCourseComplete = allLessons.length > 0 && completedLessons === allLessons.length;
     const progressPercent = allLessons.length > 0 ? Math.round((completedLessons / allLessons.length) * 100) : 0;
 
     if (isGenerating) return (
@@ -194,9 +199,42 @@ const CourseDetailPage: React.FC = () => {
                                     );
                                 })}
                             </div>
-                        </section>
+                        </section>   
                     );
                 })}
+                <section className="pt-20 border-t-8 border-gray-200 mt-32 pb-40">
+                    <div className="text-center mb-12">
+                        <h2 className="marker-font text-5xl uppercase text-gray-800">Final Certification</h2>
+                        <p className="handwritten text-2xl text-gray-400 italic mt-2">
+                            {isCourseComplete 
+                                ? "Congratulations, Scholar. You have mastered this curriculum." 
+                                : "Master all lesson blocks to unlock your official diploma."}
+                        </p>
+                    </div>
+
+                    <div className="relative">
+                        {/* Grayed out overlay if not complete */}
+                        {!isCourseComplete && (
+                            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#f4f1ea]/60 backdrop-blur-[2px] rounded-3xl">
+                                <div className="bg-white p-8 rounded-full shadow-2xl mb-4">
+                                    <span className="material-symbols-outlined text-6xl text-gray-300">lock</span>
+                                </div>
+                                <div className="marker-font text-2xl text-gray-400 uppercase tracking-widest">
+                                    {allLessons.length - completedLessons} Lessons Remaining
+                                </div>
+                            </div>
+                        )}
+
+                        {/* The Certificate Component */}
+                        <div className={isCourseComplete ? "" : "grayscale opacity-30 pointer-events-none"}>
+                            <CertificateView
+                                topicTitle={course?.title || "Seeker Course"}
+                                userName={user?.fullName || user?.firstName || "Seeker Student"}
+                                completionDate={new Date().toLocaleDateString()}
+                            />
+                        </div>
+                    </div>
+                </section>
             </div>
             <style>{` .marker-font { font-family: 'Permanent Marker', cursive; } .handwritten { font-family: 'Caveat', cursive; } `}</style>
         </div>

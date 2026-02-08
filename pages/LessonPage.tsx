@@ -117,7 +117,7 @@ const LessonPage: React.FC = () => {
 
   // Interrupt Handling
   const userSpeakingRef = useRef(false); // Can likely be removed now, but keeping for state tracking if needed
-  
+
   // Accumulators for saving
   const transcriptAccumulator = useRef("");
   const thoughtAccumulator = useRef("");
@@ -185,21 +185,21 @@ const LessonPage: React.FC = () => {
   // 2. Audio Cleanup & Interaction Handling
   const clearAudioQueue = useCallback(() => {
     console.log('🛑 Clearing audio queue - Interruption Detected');
-    
+
     // Stop all audio
     sourcesRef.current.forEach(source => {
       try { source.stop(); source.disconnect(); } catch (e) { }
     });
     sourcesRef.current.clear();
-    
+
     // Reset output timing
     if (outputAudioCtxRef.current) {
       nextStartTimeRef.current = outputAudioCtxRef.current.currentTime;
     }
-    
+
     // UX: Wipe the board on interruption
-    setBoardContent(''); 
-    
+    setBoardContent('');
+
     setIsWriting(false);
   }, []);
 
@@ -214,7 +214,7 @@ const LessonPage: React.FC = () => {
 
     if (user && (transcriptAccumulator.current || thoughtAccumulator.current)) {
       const finalUrls: string[] = [];
-      
+
       // A. Upload generated images
       for (const b64 of base64ImagesQueue.current) {
         try {
@@ -239,31 +239,29 @@ const LessonPage: React.FC = () => {
       });
 
       // C. Gamification
-      try {
-        await awardXP(user.id, 50); 
-        await checkNightScholar(user.id);
-        await checkFirstStep(user.id);
-        await checkDeepDiver(user.id);
-      } catch (err) { console.error("Gamification error:", err); }
+      const firstStepBadge = await checkFirstStep(user.id);
+      const nightBadge = await checkNightScholar(user.id);
+      const deepDiverBadge = await checkDeepDiver(user.id);
+
+      // D. Navigation with Badge State
+      // We pass the first newly earned badge found to show in the modal
+      const newlyUnlocked = firstStepBadge || nightBadge || deepDiverBadge;
+
+      if (sessionRef.current) try { sessionRef.current.close(); } catch (e) { }
+      sessionRef.current = null;
+
+      [inputAudioCtxRef, outputAudioCtxRef].forEach(ref => {
+        if (ref.current && ref.current.state !== 'closed') ref.current.close();
+        ref.current = null;
+      });
+
+      setIsWriting(false);
+      setTimeout(() => {
+        navigate(`/notes/${lessonId}`, {
+          state: { unlockedBadge: newlyUnlocked }
+        });
+      }, 2000);
     }
-
-    if (sessionRef.current) try { sessionRef.current.close(); } catch (e) { }
-    sessionRef.current = null;
-    sessionPromiseRef.current = null;
-
-    [inputAudioCtxRef, outputAudioCtxRef].forEach(ref => {
-      if (ref.current && ref.current.state !== 'closed') ref.current.close();
-      ref.current = null;
-    });
-
-    setIsWriting(false);
-
-    if (videoRef.current?.srcObject) {
-      (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop());
-      videoRef.current.srcObject = null;
-    }
-
-    setTimeout(() => navigate(`/notes/${lessonId}`), 2500);
   }, [user, lessonId, lessonContext, navigate]);
 
   // 4. Image Generation
@@ -381,7 +379,7 @@ const LessonPage: React.FC = () => {
               // Audio Input Setup
               const source = inputAudioCtxRef.current!.createMediaStreamSource(stream);
               const scriptProcessor = inputAudioCtxRef.current!.createScriptProcessor(4096, 1, 1);
-              
+
               // UPDATE: Removed manual Volume calculation logic (average > 20).
               // We now trust Gemini's VAD entirely.
               scriptProcessor.onaudioprocess = (e) => {
@@ -391,7 +389,7 @@ const LessonPage: React.FC = () => {
                       media: createBlob(e.inputBuffer.getChannelData(0))
                     });
                   } catch (err) {
-                     // ignore if session closed
+                    // ignore if session closed
                   }
                 }
               };
@@ -433,7 +431,7 @@ const LessonPage: React.FC = () => {
               // Audio Output
               const audio = m.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
               if (audio && outputAudioCtxRef.current && outputAudioCtxRef.current.state !== 'closed') {
-                
+
                 setIsWriting(true);
                 try {
                   const buf = await decodeAudioData(decode(audio), outputAudioCtxRef.current, 24000, 1);
@@ -615,7 +613,7 @@ const LessonPage: React.FC = () => {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && userInput.trim() && sessionRef.current) {
                 // Manually clearing queue triggers the board wipe
-                clearAudioQueue(); 
+                clearAudioQueue();
                 try {
                   sessionRef.current.sendClientContent({
                     turns: [{ role: 'user', parts: [{ text: userInput }] }],

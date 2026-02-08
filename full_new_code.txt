@@ -289,7 +289,7 @@ export default App;
 // FILE: README.md
 // --------------------------------------------------------------------------
 
-![Seeker Banner](https://raw.githubusercontent.com/user-attachments/assets/placeholder-banner.png)
+![Seeker Banner](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2022-29-23.png)
 
 # Seeker | The Personal AI-Tutor
 
@@ -299,7 +299,7 @@ export default App;
 - [Technical Architecture](#technical-architecture)
     - [The Live Multimodal Loop](#the-live-multimodal-loop)
     - [Curriculum Architect Flow](#curriculum-architect-flow)
-    - [Agentic Media Pipeline](#agentic-media-pipeline)
+    - [Media Pipeline](#media-pipeline)
 - [Gemini 3 Implementation](#gemini-3-implementation)
 - [Directory Structure](#directory-structure)
   - [/src/components](#srccomponents)
@@ -316,7 +316,16 @@ The application moves beyond simple text chat, offering a multimodal experience 
 
 ## Technical Architecture
 
-The frontend is built with **React (Vite)** and **TypeScript**, leveraging **WebSockets** for low-latency AI communication and **Supabase** for state persistence.
+Seeker operates as a distributed system across two repositories to handle the intense computational requirements of generative media.
+
+*   **Frontend (This Repo):** Handles the real-time "Live Classroom," audio streaming, and direct user interaction.
+*   **Backend ([Seeker Server](https://github.com/greatsage-raphael/seeker_server)):** Handles long-running agentic workflows (Video Rendering, FFmpeg processing, Comic generation) that cannot run in a browser environment.
+
+### Client-Server Interaction Flow
+
+The Frontend manages the immediate learning experience. When a lesson concludes, it dispatches asynchronous triggers to the Backend. The Backend generates high-fidelity assets (using Veo and Gemini) and uploads them to Supabase. The Frontend listens for database changes via WebSockets to update the UI in real-time when the media is ready.
+
+![Client-Server Interaction Flow](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/diagram-export-2-5-2026-8_25_01-PM.png)
 
 ### The Live Multimodal Loop
 
@@ -326,16 +335,32 @@ The core of Seeker is the `LessonPage`. Unlike traditional chatbots, this establ
 2.  **VAD (Voice Activity Detection):** The model listens for user interruptions. If detected, the frontend immediately halts audio playback and clears the buffer (interruptibility).
 3.  **Multimodal Output:** The model responds with Audio (played via the browser) and Text/JSON commands (rendered dynamically on the `<Blackboard />` component).
 
-![The Live Multimodal Loop](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Untitled%20diagram-2026-02-05-162810.png)
+![The Live Multimodal Loop](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/diagram-export-2-5-2026-8_30_46-PM.png)
 
 ### Curriculum Architect Flow
 Users upload raw PDF documents (textbooks, papers) via the `CoursesPage`. The frontend converts these files to Base64 and sends them to **Gemini 3 Pro**. Using its high-reasoning capabilities, the model acts as an "Architect," restructuring the raw data into a gamified dependency tree (Courses → Modules → Lesson Plans).
 
-### Agentic Media Pipeline
+![Curriculum Architect Flow](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/diagram-export-2-5-2026-9_14_08-PM.png)
+
+
+### Media Pipeline
 After a lesson concludes, the frontend triggers asynchronous generation requests. While the user reviews their notes, the system generates high-fidelity media:
+
 *   **Comics:** Gemini 3 generates visual descriptions which are rendered into comic panels.
+
+![Comics 2](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-42-34.png)
+
 *   **Podcasts:** Two distinct AI personalities ("Alex" and "Sam") discuss the lesson topic.
-*   **Cinematics:** Google Veo generates 8-second video loops stitched into an explainer video.
+
+![Podcast](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-47-44.png)
+
+*   **Cinematics:** Google Veo generates 8-second video loops stitched into a 30-second explainer video.
+
+[![Watch the demo](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-53-36.png)](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/33d3435d-fe5e-450c-b71b-a3797944f5b8/cinematic_1769537211186.mp4)
+
+*   **slides:** Gemini 3 generate slides using yhe lesson materials then stitches the images + audio generated with ffmpeg to create slides for the user. 
+
+[![Watch the demo](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/Screenshot%20from%202026-02-05%2020-58-24.png)](https://eifeyuvbxmsjjtbtbyuk.supabase.co/storage/v1/object/public/seeker/33d3435d-fe5e-450c-b71b-a3797944f5b8/slides_1769537093740.mp4)
 
 ## Gemini 3 Implementation
 
@@ -1493,6 +1518,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../src/lib/supabase';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import CertificateView from '@/components/CertificateView';
+import { useUser } from '@clerk/clerk-react';
 
 const TEXT_MODEL = "gemini-3-pro-preview"; // Latest Gemini 3 Pro
 const IMAGE_MODEL = "gemini-3-pro-image-preview"; // Nano Banana Pro
@@ -1500,10 +1527,12 @@ const IMAGE_MODEL = "gemini-3-pro-image-preview"; // Nano Banana Pro
 const CourseDetailPage: React.FC = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
+    const { user } = useUser();
 
     const [course, setCourse] = useState<any>(null);
     const [modules, setModules] = useState<any[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
+    
 
     useEffect(() => {
         fetchCourseAndModules();
@@ -1597,6 +1626,7 @@ const CourseDetailPage: React.FC = () => {
 
     const allLessons = modules.flatMap(m => m.lesson_plans || []);
     const completedLessons = allLessons.filter(l => l.status === 'completed').length;
+    const isCourseComplete = allLessons.length > 0 && completedLessons === allLessons.length;
     const progressPercent = allLessons.length > 0 ? Math.round((completedLessons / allLessons.length) * 100) : 0;
 
     if (isGenerating) return (
@@ -1685,9 +1715,42 @@ const CourseDetailPage: React.FC = () => {
                                     );
                                 })}
                             </div>
-                        </section>
+                        </section>   
                     );
                 })}
+                <section className="pt-20 border-t-8 border-gray-200 mt-32 pb-40">
+                    <div className="text-center mb-12">
+                        <h2 className="marker-font text-5xl uppercase text-gray-800">Final Certification</h2>
+                        <p className="handwritten text-2xl text-gray-400 italic mt-2">
+                            {isCourseComplete 
+                                ? "Congratulations, Scholar. You have mastered this curriculum." 
+                                : "Master all lesson blocks to unlock your official diploma."}
+                        </p>
+                    </div>
+
+                    <div className="relative">
+                        {/* Grayed out overlay if not complete */}
+                        {!isCourseComplete && (
+                            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#f4f1ea]/60 backdrop-blur-[2px] rounded-3xl">
+                                <div className="bg-white p-8 rounded-full shadow-2xl mb-4">
+                                    <span className="material-symbols-outlined text-6xl text-gray-300">lock</span>
+                                </div>
+                                <div className="marker-font text-2xl text-gray-400 uppercase tracking-widest">
+                                    {allLessons.length - completedLessons} Lessons Remaining
+                                </div>
+                            </div>
+                        )}
+
+                        {/* The Certificate Component */}
+                        <div className={isCourseComplete ? "" : "grayscale opacity-30 pointer-events-none"}>
+                            <CertificateView
+                                topicTitle={course?.title || "Seeker Course"}
+                                userName={user?.fullName || user?.firstName || "Seeker Student"}
+                                completionDate={new Date().toLocaleDateString()}
+                            />
+                        </div>
+                    </div>
+                </section>
             </div>
             <style>{` .marker-font { font-family: 'Permanent Marker', cursive; } .handwritten { font-family: 'Caveat', cursive; } `}</style>
         </div>

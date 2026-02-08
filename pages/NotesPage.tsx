@@ -2,12 +2,13 @@
 // --------------------------------------------------------------------------
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { GoogleGenAI } from '@google/genai';
 import { useUser } from '@clerk/clerk-react';
 import { supabase } from '../src/lib/supabase';
 import IntelligentMarkdown from '@/components/IntelligentMarkdown';
 import CertificateView from '@/components/CertificateView'; 
+import BadgeUnlockModal from '@/components/BadgeUnlockModal';
 
 const IMAGE_MODEL_NAME = 'gemini-3-pro-image-preview'; 
 const TEXT_MODEL_NAME = 'gemini-3-pro-preview'; 
@@ -53,6 +54,18 @@ const NotesPage: React.FC = () => {
   const notesTriggered = useRef(false);
   const podcastTriggered = useRef(false);
   const comicTriggered = useRef(false);
+  const location = useLocation();
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [unlockedBadge, setUnlockedBadge] = useState<any>(null);
+
+  useEffect(() => {
+    if (location.state?.unlockedBadge) {
+      setUnlockedBadge(location.state.unlockedBadge);
+      setShowBadgeModal(true);
+      // Clean up state so it doesn't show again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   useEffect(() => {
     document.body.style.overflow = 'auto';
@@ -247,6 +260,12 @@ const NotesPage: React.FC = () => {
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-screen h-auto overflow-auto bg-[#e5e7eb] font-sans text-gray-900 overscroll-contain">
       
+      {showBadgeModal && unlockedBadge && (
+        <BadgeUnlockModal 
+          badge={unlockedBadge} 
+          onClose={() => setShowBadgeModal(false)} 
+        />
+      )}
       {/* LEFT SIDEBAR: LESSON IMAGES */}
       <aside className="w-full lg:w-72 bg-[#d1d5db] p-6 shrink-0 lg:h-full lg:overflow-y-auto lg:border-r border-gray-300 shadow-inner">
         <h3 className="marker-font text-gray-500 uppercase text-xs mb-8 tracking-widest text-center">Visual Aids</h3>
