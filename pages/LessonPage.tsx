@@ -53,6 +53,19 @@ const generateDiagramFn: FunctionDeclaration = {
   }
 };
 
+const searchWebFn: FunctionDeclaration = {
+  name: 'search_web',
+  parameters: {
+    type: Type.OBJECT,
+    description: 'Search the live web for real-time information, news, or general facts.',
+    properties: { query: { type: Type.STRING } },
+    required: ['query']
+  }
+};
+
+
+
+
 const searchAcademicPapersFn: FunctionDeclaration = {
   name: 'search_academic_papers',
   parameters: {
@@ -117,7 +130,7 @@ const LessonPage: React.FC = () => {
 
   // Interrupt Handling
   const userSpeakingRef = useRef(false); // Can likely be removed now, but keeping for state tracking if needed
-
+  
   // Accumulators for saving
   const transcriptAccumulator = useRef("");
   const thoughtAccumulator = useRef("");
@@ -185,21 +198,21 @@ const LessonPage: React.FC = () => {
   // 2. Audio Cleanup & Interaction Handling
   const clearAudioQueue = useCallback(() => {
     console.log('🛑 Clearing audio queue - Interruption Detected');
-
+    
     // Stop all audio
     sourcesRef.current.forEach(source => {
       try { source.stop(); source.disconnect(); } catch (e) { }
     });
     sourcesRef.current.clear();
-
+    
     // Reset output timing
     if (outputAudioCtxRef.current) {
       nextStartTimeRef.current = outputAudioCtxRef.current.currentTime;
     }
-
+    
     // UX: Wipe the board on interruption
-    setBoardContent('');
-
+    setBoardContent(''); 
+    
     setIsWriting(false);
   }, []);
 
@@ -214,7 +227,7 @@ const LessonPage: React.FC = () => {
 
     if (user && (transcriptAccumulator.current || thoughtAccumulator.current)) {
       const finalUrls: string[] = [];
-
+      
       // A. Upload generated images
       for (const b64 of base64ImagesQueue.current) {
         try {
@@ -247,22 +260,22 @@ const LessonPage: React.FC = () => {
       // We pass the first newly earned badge found to show in the modal
       const newlyUnlocked = firstStepBadge || nightBadge || deepDiverBadge;
 
-      if (sessionRef.current) try { sessionRef.current.close(); } catch (e) { }
-      sessionRef.current = null;
+    if (sessionRef.current) try { sessionRef.current.close(); } catch (e) { }
+    sessionRef.current = null;
 
-      [inputAudioCtxRef, outputAudioCtxRef].forEach(ref => {
-        if (ref.current && ref.current.state !== 'closed') ref.current.close();
-        ref.current = null;
+    [inputAudioCtxRef, outputAudioCtxRef].forEach(ref => {
+      if (ref.current && ref.current.state !== 'closed') ref.current.close();
+      ref.current = null;
+    });
+
+    setIsWriting(false);
+    setTimeout(() => {
+      navigate(`/notes/${lessonId}`, { 
+        state: { unlockedBadge: newlyUnlocked } 
       });
-
-      setIsWriting(false);
-      setTimeout(() => {
-        navigate(`/notes/${lessonId}`, {
-          state: { unlockedBadge: newlyUnlocked }
-        });
-      }, 2000);
-    }
-  }, [user, lessonId, lessonContext, navigate]);
+    }, 2000);
+  }
+}, [user, lessonId, lessonContext, navigate]);
 
   // 4. Image Generation
   const handleGenerateImage = async (prompt: string) => {
@@ -281,241 +294,234 @@ const LessonPage: React.FC = () => {
   };
 
   // 5. Main AI Logic
-  useEffect(() => {
-    if (loadingContext || !lessonContext || !user) return;
+ // 5. Main AI Logic
+ useEffect(() => {
+  if (loadingContext || !lessonContext || !user) return;
 
-    const initLesson = async () => {
-      try {
-        setStatus(TeacherStatus.CONNECTING);
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        inputAudioCtxRef.current = new AudioCtx({ sampleRate: 16000 });
-        outputAudioCtxRef.current = new AudioCtx({ sampleRate: 24000 });
+  const initLesson = async () => {
+    try {
+      setStatus(TeacherStatus.CONNECTING);
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      
+      inputAudioCtxRef.current = new AudioCtx({ sampleRate: 16000 });
+      outputAudioCtxRef.current = new AudioCtx({ sampleRate: 24000 });
 
-        // UPDATE: Added constraints for Echo Cancellation to prevent self-interruption
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-          video: { width: 640, height: 480 }
-        });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: { width: 640, height: 480 }
+      });
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          setCameraActive(true);
-        }
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setCameraActive(true);
+      }
 
-        // --- CONTEXT ENGINEERING ---
-        let finalSystemInstruction = `You are a friendly, patient, and expert virtual AI teacher named Seeker. 
-        Your goal is to teach the user via AUDIO. You cannot see the user, so rely on your voice and the blackboard.
+      // --- MASTER TEACHER SYSTEM INSTRUCTION ---
+      let finalSystemInstruction = `You are Seeker, a brilliant, proactive, and friendly virtual AI tutor.
+      Your goal is to lead the student, ${user.firstName}, through a world-class educational experience.
+
+      ### 1. YOUR TEACHING PROTOCOL
+      - **Audio First:** You teach via natural conversation. Keep responses under 30 seconds.
+      - **Micro-Learning:** Break topics into small blocks. After each, ask: "Does that make sense?" or "Should I continue?"
+
+      ### 2. YOUR ARSENAL (Use proactively!)
+      - **Visual Thinking (generate_educational_diagram):** Use this for complex structures (cells, engines, graphs). Say: "Let me sketch that on the board for you..."
+      - **Mastery Validation (create_quiz):** Proactively trigger a quiz after a major concept. Say: "To ensure we've mastered this, here is a quick challenge..."
+      - **Academic Research (search_academic_papers):** Use for deep scholarly facts.
+      - **Live Knowledge (search_web):** Use for real-time news, current events, or general facts.
+      - **Grounding (googleSearch):** Use for internal verification of all facts.
+
+      ### 3. PEDAGOGICAL TONE
+      - Be encouraging like a mentor, but rigorous like a professor.
+      - If interrupted, acknowledge the student immediately and pivot.
+      `;
+
+      let initialUserMessage = "";
+
+      // Dynamic Context Injection
+      if (lessonContext.type === 'structured') {
+        finalSystemInstruction += `
+        ### ACADEMIC CONTEXT (STRUCTURED)
+        - Course: "${lessonContext.courseTitle}"
+        - Module: "${lessonContext.moduleTitle}"
+        - Lesson Topic: "${lessonContext.title}"
+        - Objectives: ${lessonContext.objectives?.join(', ')}
+        MISSION: Guide the student through these objectives. Start now.`;
         
-        CRITICAL RULES:
-        1. Keep responses SHORT (15-30 seconds max) - this is a conversation, not a lecture.
-        2. After each short explanation, PAUSE and ask "Does that make sense?" or "Should I continue?".
-        3. Listen for interruptions.
-        4. NEVER queue long monologues.
+        initialUserMessage = `I have arrived for: "${lessonContext.title}". Please greet me and begin the lesson.`;
+      } else {
+        finalSystemInstruction += `
+        ### ACADEMIC CONTEXT (IMPROMPTU)
+        - Topic: "${lessonContext.title}"
+        - Mode: Deep Dive Discovery
+        MISSION: Provide an expert overview and discover what the student wants to learn. Start now.`;
+        
+        initialUserMessage = `I want to learn about "${lessonContext.title}". Please start the class.`;
+      }
 
-        Student Name: ${user.firstName}.
-        `;
+      const sessionPromise = ai.live.connect({
+        model: MODEL_NAME,
+        config: {
+          responseModalities: [Modality.AUDIO],
+          systemInstruction: finalSystemInstruction,
+          tools: [
+            //grounding tool
+            { googleSearch: {} },
+            { functionDeclarations: [createQuizFn, generateDiagramFn, searchAcademicPapersFn, searchWebFn] }
+          ],
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+          outputAudioTranscription: {},
+        },
+        callbacks: {
+          onopen: async () => {
+            setStatus(TeacherStatus.TEACHING);
+            
+            // Resume context for proactive audio
+            if (outputAudioCtxRef.current?.state === 'suspended') {
+              await outputAudioCtxRef.current.resume();
+            }
 
-        let initialUserMessage = "";
+            // --- DOCS-COMPLIANT NUDGE: Force Speak First ---
+            if (sessionRef.current) {
+              console.log("📝 Initializing Seeker...");
+              sessionRef.current.sendClientContent({
+                turns: [{ role: 'user', parts: [{ text: initialUserMessage }] }],
+                turnComplete: true
+              });
+            }
 
-        if (lessonContext.type === 'structured') {
-          finalSystemInstruction += `
-          CONTEXT:
-          You are the official instructor for the course: "${lessonContext.courseTitle}".
-          Current Module: "${lessonContext.moduleTitle}".
-          Lesson Topic: "${lessonContext.title}".
-          Learning Objectives: ${lessonContext.objectives?.join(', ')}.
-
-          BEHAVIOR:
-          Welcome the student to this specific lesson. 
-          Briefly state the goal based on the objectives. 
-          Do NOT ask "what do you want to learn today". 
-          Begin the lesson material immediately after the welcome.
-          `;
-          initialUserMessage = `I have arrived in the classroom for the lesson: "${lessonContext.title}". Please introduce today's lesson and begin.`;
-        } else {
-          finalSystemInstruction += `
-          CONTEXT:
-          The student has initiated an impromptu session on the topic: "${lessonContext.title}".
-          
-          BEHAVIOR:
-          Ask the student what specific aspect of "${lessonContext.title}" they want to explore, or offer a starting point.
-          `;
-          initialUserMessage = `I want to learn about "${lessonContext.title}". Please start the class.`;
-        }
-
-        const sessionPromise = ai.live.connect({
-          model: MODEL_NAME,
-          config: {
-            responseModalities: [Modality.AUDIO],
-            systemInstruction: finalSystemInstruction,
-            tools: [
-              { googleSearch: {} },
-              { functionDeclarations: [createQuizFn, generateDiagramFn, searchAcademicPapersFn] }
-            ],
-            // UPDATE: Removed "Kore" voice config to use default or let model decide, 
-            // as some specific voice configs can sometimes cause latency issues. 
-            // You can add it back if needed, but simplest is best for debugging.
-            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
-            outputAudioTranscription: {},
-          },
-          callbacks: {
-            onopen: () => {
-              setStatus(TeacherStatus.TEACHING);
-
-              // Force Speak First
+            // Mic Setup
+            const source = inputAudioCtxRef.current!.createMediaStreamSource(stream);
+            const scriptProcessor = inputAudioCtxRef.current!.createScriptProcessor(4096, 1, 1);
+            
+            scriptProcessor.onaudioprocess = (e) => {
               if (sessionRef.current) {
-                console.log("🚀 Sending initial context trigger...");
-                sessionRef.current.sendClientContent({
-                  turns: [{ role: 'user', parts: [{ text: initialUserMessage }] }],
-                  turnComplete: true
-                });
-              }
-
-              // Audio Input Setup
-              const source = inputAudioCtxRef.current!.createMediaStreamSource(stream);
-              const scriptProcessor = inputAudioCtxRef.current!.createScriptProcessor(4096, 1, 1);
-
-              // UPDATE: Removed manual Volume calculation logic (average > 20).
-              // We now trust Gemini's VAD entirely.
-              scriptProcessor.onaudioprocess = (e) => {
-                if (sessionRef.current) {
-                  try {
-                    sessionRef.current.sendRealtimeInput({
-                      media: createBlob(e.inputBuffer.getChannelData(0))
-                    });
-                  } catch (err) {
-                    // ignore if session closed
-                  }
-                }
-              };
-
-              source.connect(scriptProcessor);
-              scriptProcessor.connect(inputAudioCtxRef.current!.destination);
-
-              // Keepalive
-              keepaliveIntervalRef.current = window.setInterval(() => {
-                if (sessionRef.current) {
-                  const silentBuffer = new Float32Array(160);
-                  try {
-                    sessionRef.current.sendRealtimeInput({ media: createBlob(silentBuffer) });
-                  } catch (err) { }
-                }
-              }, 5000);
-            },
-
-            onmessage: async (m: any) => {
-              // Transcript
-              if (m.serverContent?.outputTranscription) {
-                const text = m.serverContent.outputTranscription.text;
-                transcriptAccumulator.current += text;
-                // Append to board
-                setBoardContent(p => p + text);
-                setFullLesson(p => p + text);
-              }
-
-              // Thoughts
-              if (m.serverContent?.modelTurn?.parts) {
-                for (const p of m.serverContent.modelTurn.parts) {
-                  if (p.thought) {
-                    thoughtAccumulator.current += p.text;
-                    setThoughts(t => t + p.text);
-                  }
-                }
-              }
-
-              // Audio Output
-              const audio = m.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-              if (audio && outputAudioCtxRef.current && outputAudioCtxRef.current.state !== 'closed') {
-
-                setIsWriting(true);
                 try {
-                  const buf = await decodeAudioData(decode(audio), outputAudioCtxRef.current, 24000, 1);
-                  const src = outputAudioCtxRef.current.createBufferSource();
-                  src.buffer = buf;
-                  src.connect(outputAudioCtxRef.current.destination);
-
-                  src.onended = () => {
-                    sourcesRef.current.delete(src);
-                    if (sourcesRef.current.size === 0) setIsWriting(false);
-                  };
-
-                  const now = outputAudioCtxRef.current.currentTime;
-                  nextStartTimeRef.current = Math.max(now, nextStartTimeRef.current);
-                  src.start(nextStartTimeRef.current);
-                  nextStartTimeRef.current += buf.duration;
-                  sourcesRef.current.add(src);
-                } catch (err) { setIsWriting(false); }
+                  sessionRef.current.sendRealtimeInput({
+                    media: createBlob(e.inputBuffer.getChannelData(0))
+                  });
+                } catch (err) { }
               }
+            };
+            source.connect(scriptProcessor);
+            scriptProcessor.connect(inputAudioCtxRef.current!.destination);
 
-              // Tools
-              if (m.toolCall) {
-                for (const fc of m.toolCall.functionCalls) {
-                  setActiveAction(fc.name.replace(/_/g, ' '));
+            // Keepalive
+            keepaliveIntervalRef.current = window.setInterval(() => {
+              if (sessionRef.current) {
+                try {
+                  sessionRef.current.sendRealtimeInput({ media: createBlob(new Float32Array(160)) });
+                } catch (err) { }
+              }
+            }, 5000);
+          },
 
-                  if (fc.name === 'create_quiz') {
-                    setCurrentQuiz(fc.args as Quiz);
-                    if (sessionRef.current) sessionRef.current.sendToolResponse({ functionResponses: { id: fc.id, name: fc.name, response: { result: "Quiz displayed." } } });
-                  }
-                  else if (fc.name === 'generate_educational_diagram') {
-                    if (sessionRef.current) sessionRef.current.sendToolResponse({ functionResponses: { id: fc.id, name: fc.name, response: { result: "Generating diagram..." } } });
-                    handleGenerateImage(fc.args.description).then(url => {
-                      if (url) setCurrentDiagram({ url, topic: fc.args.topic });
-                    });
-                  }
-                  else if (fc.name === 'search_academic_papers') {
-                    setSources(prev => [{
-                      title: `PAPER: ${fc.args.query}`,
-                      uri: `https://scholar.google.com/scholar?q=${encodeURIComponent(fc.args.query)}`,
-                      isAcademic: true
-                    }, ...prev]);
-                    if (sessionRef.current) sessionRef.current.sendToolResponse({ functionResponses: { id: fc.id, name: fc.name, response: { result: "Sources found." } } });
-                  }
-                  setTimeout(() => setActiveAction(null), 3000);
+          onmessage: async (m: any) => {
+            // Transcription -> Blackboard
+            if (m.serverContent?.outputTranscription) {
+              const text = m.serverContent.outputTranscription.text;
+              transcriptAccumulator.current += text;
+              setBoardContent(p => p + text);
+              setFullLesson(p => p + text);
+            }
+
+            // Thoughts
+            if (m.serverContent?.modelTurn?.parts) {
+              for (const p of m.serverContent.modelTurn.parts) {
+                if (p.thought) {
+                  thoughtAccumulator.current += p.text;
+                  setThoughts(t => t + p.text);
                 }
-              }
-
-              // Server-Side VAD (Interruption Handling)
-              // This is the correct way to handle interruptions
-              if (m.serverContent?.interrupted) {
-                clearAudioQueue();
-              }
-            },
-
-            onerror: (e) => {
-              console.error('Session error:', e);
-              setStatus(TeacherStatus.ERROR);
-            },
-
-            onclose: () => {
-              if (keepaliveIntervalRef.current) {
-                clearInterval(keepaliveIntervalRef.current);
-                keepaliveIntervalRef.current = null;
               }
             }
+
+            // Audio Playback
+            const audio = m.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+            if (audio && outputAudioCtxRef.current && outputAudioCtxRef.current.state !== 'closed') {
+              setIsWriting(true);
+              try {
+                const buf = await decodeAudioData(decode(audio), outputAudioCtxRef.current, 24000, 1);
+                const src = outputAudioCtxRef.current.createBufferSource();
+                src.buffer = buf;
+                src.connect(outputAudioCtxRef.current.destination);
+                src.onended = () => {
+                  sourcesRef.current.delete(src);
+                  if (sourcesRef.current.size === 0) setIsWriting(false);
+                };
+                const now = outputAudioCtxRef.current.currentTime;
+                nextStartTimeRef.current = Math.max(now, nextStartTimeRef.current);
+                src.start(nextStartTimeRef.current);
+                nextStartTimeRef.current += buf.duration;
+                sourcesRef.current.add(src);
+              } catch (err) { setIsWriting(false); }
+            }
+
+            // Tool-Use Handler
+            if (m.toolCall) {
+              for (const fc of m.toolCall.functionCalls) {
+                setActiveAction(fc.name.replace(/_/g, ' '));
+
+                if (fc.name === 'create_quiz') {
+                  setCurrentQuiz(fc.args as Quiz);
+                  if (sessionRef.current) sessionRef.current.sendToolResponse({ functionResponses: { id: fc.id, name: fc.name, response: { result: "Quiz displayed." } } });
+                }
+                else if (fc.name === 'generate_educational_diagram') {
+                  if (sessionRef.current) sessionRef.current.sendToolResponse({ functionResponses: { id: fc.id, name: fc.name, response: { result: "Generating diagram..." } } });
+                  handleGenerateImage(fc.args.description).then(url => {
+                    if (url) setCurrentDiagram({ url, topic: fc.args.topic });
+                  });
+                }
+                else if (fc.name === 'search_web' || fc.name === 'search_academic_papers') {
+                  const isWeb = fc.name === 'search_web';
+                  setSources(prev => [{
+                    title: `${isWeb ? 'WEB' : 'PAPER'}: ${fc.args.query}`,
+                    uri: isWeb 
+                      ? `https://www.google.com/search?q=${encodeURIComponent(fc.args.query)}`
+                      : `https://scholar.google.com/scholar?q=${encodeURIComponent(fc.args.query)}`,
+                    isWeb
+                  }, ...prev]);
+                  if (sessionRef.current) sessionRef.current.sendToolResponse({ functionResponses: { id: fc.id, name: fc.name, response: { result: "Sources provided." } } });
+                }
+                setTimeout(() => setActiveAction(null), 3000);
+              }
+            }
+
+            if (m.serverContent?.interrupted) {
+              clearAudioQueue();
+            }
+          },
+
+          onerror: (e) => {
+            console.error('Session error:', e);
+            setStatus(TeacherStatus.ERROR);
+          },
+
+          onclose: () => {
+            if (keepaliveIntervalRef.current) {
+              clearInterval(keepaliveIntervalRef.current);
+              keepaliveIntervalRef.current = null;
+            }
           }
-        });
+        }
+      });
 
-        sessionPromiseRef.current = sessionPromise;
-        sessionRef.current = await sessionPromise;
+      sessionPromiseRef.current = sessionPromise;
+      sessionRef.current = await sessionPromise;
 
-      } catch (err) {
-        console.error('Init error:', err);
-        setStatus(TeacherStatus.IDLE);
-      }
-    };
+    } catch (err) {
+      console.error('Init error:', err);
+      setStatus(TeacherStatus.IDLE);
+    }
+  };
 
-    initLesson();
+  initLesson();
 
-    return () => {
-      if (keepaliveIntervalRef.current) clearInterval(keepaliveIntervalRef.current);
-      if (sessionRef.current) try { sessionRef.current.close(); } catch (e) { }
-    };
-  }, [loadingContext, lessonContext, user, clearAudioQueue]);
+  return () => {
+    if (keepaliveIntervalRef.current) clearInterval(keepaliveIntervalRef.current);
+    if (sessionRef.current) try { sessionRef.current.close(); } catch (e) { }
+  };
+}, [loadingContext, lessonContext, user, clearAudioQueue]);
 
   if (loadingContext) {
     return (
@@ -585,15 +591,23 @@ const LessonPage: React.FC = () => {
           onQuizComplete={() => { }}
         />
 
-        {sources.length > 0 && (
-          <div className="px-8 pb-4 flex flex-wrap gap-2 overflow-y-auto max-h-24 z-20">
-            {sources.map((s, i) => (
-              <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer" className="border px-3 py-1 rounded-lg text-[10px] uppercase font-bold tracking-widest bg-white/5 border-white/10 hover:bg-white/10 transition-all text-white/60">
-                {s.title}
-              </a>
-            ))}
-          </div>
-        )}
+{sources.length > 0 && (
+  <div className="px-8 pb-4 flex flex-wrap gap-2 overflow-y-auto max-h-24 z-20">
+    {sources.map((s, i) => (
+      <a 
+        key={i} 
+        href={s.uri} 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        className={`border px-3 py-1 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all
+          ${s.isWeb ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/10 text-white/60'}`}
+      >
+        <span className="mr-2">{s.isWeb ? '🌐' : '📄'}</span>
+        {s.title}
+      </a>
+    ))}
+  </div>
+)}
 
         {cameraActive && (
           <div className="absolute top-6 right-6 w-44 h-32 rounded-2xl border-4 border-white/10 shadow-2xl overflow-hidden bg-black z-30 transition-all hover:scale-105 shadow-green-500/10">
@@ -613,7 +627,7 @@ const LessonPage: React.FC = () => {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && userInput.trim() && sessionRef.current) {
                 // Manually clearing queue triggers the board wipe
-                clearAudioQueue();
+                clearAudioQueue(); 
                 try {
                   sessionRef.current.sendClientContent({
                     turns: [{ role: 'user', parts: [{ text: userInput }] }],
